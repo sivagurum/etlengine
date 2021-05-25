@@ -1,0 +1,105 @@
+000:
+ job_configurations:
+  func: SETV
+  config:
+   otherOptionsEnable: Y
+001:
+ read_masterFile:
+  input:
+   hostName: localhost
+   port: "9999"
+   schema:
+       type: struct
+       fields:
+       - name: star_rating
+         type: string
+         nullable: true
+         metadata: {}
+       - name: title
+         type: string
+         nullable: true
+         metadata: {}
+       - name: content_rating
+         type: string
+         nullable: true
+         metadata: {}
+       - name: genre
+         type: string
+         nullable: true
+         metadata: {}
+       - name: duration
+         type: string
+         nullable: true
+         metadata: {}
+       - name: actors_list
+         type: string
+         nullable: true
+         metadata: {}
+   fileFormat: csv
+  func: READ_STREAM
+  output: stream_output
+002:
+ filter_IMDB_file:
+  input: stream_output
+  func: FILTER
+  config:
+   filterCond: "genre = 'Drama'"
+   deSelect: N
+  output:
+   select: filter_out
+003:
+ reformat_IMDB_file:
+  input: filter_out
+  func: REFORMAT
+  config:
+   reformatCol:
+    -
+        - "*"
+        - "*"
+    -
+        - "cast(trim(duration) as Int)"
+        - "duration"
+    -
+        - "cast('1' as String)"
+        - "new_column"
+  output: reformat_out
+  otherOptions:
+   printSchema: N
+   explain: N
+   show: N
+   storage: N
+   exit: N
+006:
+ sort_IMDB_file:
+  input: reformat_out
+  func: SORT
+  config:
+   sortKeys:
+    -
+        - duration
+        - desc
+  output: sort_out
+  otherOptions:
+   show: N
+   explain: N
+   exit: N
+007:
+ dropDuplicates:
+  input: sort_out
+  func: DEDUP
+  config:
+   keys:
+    - genre
+    - content_rating
+   keep: unique
+   captureDuplicates: Y
+  output:
+   unique: uniqueDF
+   duplicate: dupRecDF
+  otherOptions:
+   uniqueDF:
+    show: Y
+   dupRecDF:
+    show: Y
+    explain: N
+    exit: N

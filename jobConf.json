@@ -1,0 +1,293 @@
+{
+   "0": {
+      "jobConfigurations": {
+         "func": "SETV",
+         "config": {
+            "otherOptionsEnable": "Y"
+         }
+      }
+   },
+   "1": {
+      "readIDQMasterFile": {
+         "input": {
+            "filePath": "/Users/jagadeeshkumarsellappan/Downloads/SalesJan2009.csv",
+            "fileFormat": "csv",
+            "header": "true",
+            "inferSchema": "true"
+         },
+         "func": "READ",
+         "output": "readMasterOut",
+         "otherOptions": {
+            "printSchema": "Y",
+            "explain": "N",
+            "show": "Y",
+            "storage": "N",
+            "exit": "N"
+         }
+      }
+   },
+  "3": {
+      "exitFlow": {
+         "input": "readMasterOut",
+         "func": "EXIT",
+         "config": {
+           "condition": "notEmpty", 
+           "thresholdLimit" : "10",
+           "exitRC": "-1",
+           "errorMessage": "invalid records"
+ 
+         }
+      }
+   },
+   "1": {
+      "readIDQMasterFileLimit": {
+         "input": "readMasterOut",
+         "func": "LIMIT",
+         "output": "readMasterOutLimit",
+         "config": {
+            "limit": "102"
+         },
+         "otherOptions": {
+            "printSchema": "N",
+            "explain": "N",
+            "countOnColumn": "Product",
+            "show": "N",
+            "storage": "N",
+            "exit": "Y"
+         }
+      }
+   },   
+   "1": {
+      "readIDQMasterFileSequence": {
+         "input": "readMasterOutLimit",
+         "func": "SEQUENCE",
+         "output": "readMasterOutSequence",
+         "config": {
+            "startValue": "1",
+            "stepValue": "1",
+            "targetColumn": "seqColTest"
+         },
+         "otherOptions": {
+            "printSchema": "N",
+            "explain": "N",
+            "countOnColumn": "Product",
+            "show": "200",
+            "storage": "N",
+            "exit": "N"
+         }
+      }
+   }, 
+   "1": {
+      "readIDQMasterFileSequenceWithSort": {
+         "input": "readMasterOutLimit",
+         "func": "SEQUENCE_WITH_SORT",
+         "output": "readMasterOutSequence",
+         "config": {
+            "startValue": "1",
+            "stepValue": "1"
+         },
+         "otherOptions": {
+            "printSchema": "N",
+            "explain": "N",
+            "countOnColumn": "Product",
+            "show": "200",
+            "storage": "N",
+            "exit": "N"
+         }
+      }
+   }, 
+   "2": {
+      "reformatIDQFile": {
+         "input": "readMasterOut",
+         "func": "REFORMAT",
+         "config": {
+            "reformatCol": [
+               [
+                  "*",
+                  "*"
+               ],
+               [
+                  "case when State = 'NJ' then 'New Jersy' else State end",
+                  "State"
+               ]
+            ]
+         },
+         "output": "reformatOut",
+         "otherOptions": {
+            "printSchema": "Y",
+            "explain": "N",
+            "show": "Y",
+            "storage": "N",
+            "exit": "N"
+         }
+      }
+   },
+   "3": {
+      "sortIDQFile": {
+         "input": "readMasterOut",
+         "func": "SORT",
+         "config": {
+            "sortKeys": [
+               [
+                  "State",
+                  "desc"
+               ]
+            ]
+         },
+         "output": "reformatSortOut",
+         "otherOptions": {
+            "show": "Y",
+            "exit": "N"
+         }
+      }
+   },
+  "3": {
+      "sqlStatement": {
+         "input": {
+         "1": "reformatSortOut"
+         }
+         "func": "SQL",
+         "config": {
+           "sql": "select count(*) as cnt, City,State from reformatSortOut rm where rm.Country = 'United States' and rm.State = 'VA' group by rm.City, rm.State 
+           union select count(*) as cnt, City, State from reformatSortOut rm1 where rm1.Country = 'United States' and rm1.State = 'NJ' group by rm1.City, rm1.State" 
+         },
+         "output": "sqlOut",
+         "otherOptions": {
+            "show": "300",
+            "exit": "Y"
+         }
+      }
+   },   
+   "4": {
+      "filterIDQMasterFile": {
+         "input": "reformatOut",
+         "func": "FILTER",
+         "config": {
+            "filterCond": "State == 'New Jersy'",
+            "deSelect": "Y"
+         },
+         "output": {
+            "select": "usDF",
+            "deSelect": "nonUS"
+         },
+         "otherOptions": {
+            "nonUS": {
+               "show": "Y",
+               "dtypes": "N"
+            },
+            "usDF": {
+               "show": "Y",
+               "countOnColumn": "Payment_Type",
+               "exit": "Y"
+            }
+         }
+      }
+   },
+   "5": {
+      "diff template": {
+         "input": {
+            "1": "usDF",
+            "2": "nonUS"
+         },
+         "func": "DIFF",
+         "output": {
+            "1": "input01OnlyDF",
+            "2": "input02OnlyDF",
+            "3": "existInBothDF"
+         },
+         "otherOptions": {
+            "input01OnlyDF": {
+               "show": "N",
+               "exit": "N"
+            },
+            "input02OnlyDF": {
+               "show": "N",
+               "exit": "N"
+            },
+            "existInBothDF": {
+               "show": "N",
+               "exit": "N"
+            }
+         }
+      }
+   },
+   "6": {
+      "join template": {
+         "input": {
+            "left": "input01OnlyDF",
+            "right": "input02OnlyDF"
+         },
+         "func": "JOIN",
+         "config": {
+            "leftKeys": [
+               "Transaction_date",
+               "Price"
+            ],
+            "joinType": "left_outer"
+         },
+         "output": {
+            "out": "joinOutDF",
+            "new": "newDF",
+            "old": "oldDF",
+            "leftMatch": "leftMatchDF",
+            "rightMatch": "rightMatchDF"
+         },
+         "otherOptions": {
+            "joinOutDF": {
+               "show": "Y"
+            },
+            "newDF": {
+               "show": "N"
+            },
+            "oldDF": {
+               "show": "N"
+            },
+            "leftMatchDF": {
+               "show": "N"
+            },
+            "rightMatchDF": {
+               "show": "N",
+               "explain": "N"
+            }
+         }
+      }
+   },
+   "7": {
+      "dropDuplicates": {
+         "input": "nonUS",
+         "func": "DEDUP",
+         "config": {
+            "keys": [
+               "Country"
+            ],
+            "keep": "last",
+            "captureDuplicates": "Y"
+         },
+         "output": {
+            "unique": "uniqueDF",
+            "duplicate": "dupRecDF"
+         },
+         "otherOptions": {
+            "uniqueDF": {
+               "show": "Y"
+            },
+            "dupRecDF": {
+               "show": "Y",
+               "explain": "N",
+               "exit": "Y"
+            }
+         }
+      }
+   },
+   "8": {
+      "writeCurrentdayMasterFile": {
+         "input": "usDF",
+         "func": "WRITE",
+         "output": {
+            "fileFormat": "csv",
+            "filePath": "/Users/jagadeeshkumarsellappan/Downloads/SalesJan2009Out13.csv",
+            "header": "true"
+         }
+      }
+   }
+}

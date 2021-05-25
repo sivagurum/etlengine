@@ -1,0 +1,331 @@
+{
+	"0": {
+		"job_configurations": {
+			"func": "SETV",
+			"config": {
+				"otherOptionsEnable": "Y"
+			}
+		}
+	},
+	"1": {
+		"udf_configurations": {
+			"func": "REGUDF",
+			"config": [
+				"com.aero.custom.udf.LengthUDF"
+			]
+		}
+	},
+	"2": {
+		"read_IMDB_masterFile": {
+			"input": {
+				"filePath": "${filePath}${fileName}",
+				"fileFormat": "csv",
+				"header": "true",
+				"inferSchema": "true"
+			},
+			"func": "READ",
+			"output": "readIMDBout_1",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "N",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"3": {
+		"reformat_IMDB_file": {
+			"input": "readIMDBout_1",
+			"func": "REFORMAT",
+			"config": {
+				"reformatCol": [
+					[
+						"*",
+						"*"
+					],
+					[
+						"case when star_rating is null then 0 else cast(star_rating as Int) end",
+						"star_rating"
+					],
+					[
+						"cast('1' as String)",
+						"new_column"
+					],
+					[
+						"lengthUDF(title)",
+						"title_length"
+					]
+				]
+			},
+			"output": "reformatOutIMDB_2",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "10",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"4": {
+		"sort_IMDB_file": {
+			"input": "reformatOutIMDB_2",
+			"func": "SORT",
+			"config": {
+				"storageLevel": "persist",
+				"sortKeys": [
+					[
+						"${key1}",
+						"${key1_ord}"
+					],
+					[
+						"${key2}",
+						"${key2_ord}"
+					]
+				]
+			},
+			"output": "reformatIMDBSortOut_3",
+			"otherOptions": {
+				"show": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"5": {
+		"groupby_IMDB_file": {
+			"input": "reformatIMDBSortOut_3",
+			"func": "GROUPBYE",
+			"config": {
+				"groupbyKeys": null,
+				"aggregation": [
+					[
+						"min",
+						"duration",
+						"min_duration"
+					],
+					[
+						"max",
+						"duration",
+						"max_duration"
+					]
+				]
+			},
+			"output": "groupbyIMDBOut_4",
+			"otherOptions": {
+				"show": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"6": {
+		"filter_IMDB_file": {
+			"input": "reformatIMDBSortOut_3",
+			"func": "FILTER",
+			"config": {
+				"filterCond": "genre='Crime'",
+				"deSelect": "Y"
+			},
+			"output": {
+				"select": "headRec_4",
+				"deSelect": "nonHeadRec_4"
+			},
+			"otherOptions": {
+				"headRec_4": {
+					"show": "N",
+					"dtypes": "N"
+				},
+				"nonHeadRec_4": {
+					"show": "N",
+					"countOnColumn": "N",
+					"explain": "N",
+					"exit": "N"
+				}
+			}
+		}
+	},
+	"7": {
+		"storage_IMDB_file": {
+			"func": "STORAGE",
+			"config": {
+				"headRec_4": "cache",
+				"nonHeadRec_4": "persist"
+			}
+		}
+	},
+	"8": {
+		"IMBD_Sequence": {
+			"input": "nonHeadRec_4",
+			"func": "SEQUENCE",
+			"config": {
+				"startValue": {
+					"valueFrom": {
+						"nonHeadRec_4": [
+							"min",
+							"duration"
+						]
+					}
+				},
+				"stepValue": "1",
+				"targetColumn": "seqColTest"
+			},
+			"output": "master_seq_out_5",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "N",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"9": {
+		"partition_IMBD_Sequence": {
+			"input": "nonHeadRec_4",
+			"func": "PARTITION",
+			"config": {
+				"partitionByColumns": [
+					"genre"
+				],
+				"numberOfPartitions": 0
+			},
+			"output": "master_partition_out_5",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"numOfPartitions": "N",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"10": {
+		"addColumn_CustomComponenet": {
+			"input": [
+				"nonHeadRec_4"
+			],
+			"func": "CUSTCOMP",
+			"config": "com.aero.custom.udc.AddColumn",
+			"output": [
+				"nonHeadRec_12345"
+			],
+			"otherOptions": {
+				"nonHeadRec_12345": {"printSchema": "N","show":"10","explain":"Y","numOfPartitions":"N","storage":"N","exit":"Y"}
+			}
+		}
+	},
+	"11": {
+		"drop_IMBD_columns": {
+			"input": "nonHeadRec_4",
+			"func": "DROP",
+			"config": {
+				"drop": [
+					"genre",
+					"duration"
+				]
+			},
+			"output": "master_drop_out_5",
+			"otherOptions": {
+				"printSchema": "N",
+				"show": "N",
+				"explain": "N",
+				"numOfPartitions": "N",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"12": {
+		"sort_partition_imdb": {
+			"input": "master_partition_out_5",
+			"func": "SORT_PARTITION",
+			"config": {
+				"sortKeys": [
+					"star_rating",
+					"duration"
+				]
+			},
+			"output": "master_sort_partition_5",
+			"otherOptions": {
+				"printSchema": "N",
+				"show": "N",
+				"explain": "N",
+				"numOfPartitions": "N",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"13": {
+		"pivot_imdb": {
+			"input": "master_partition_out_5",
+			"func": "PIVOT",
+			"config": {
+				"groupbyKeys": [
+					"star_rating"
+				],
+				"pivotColumn": "genre",
+				"aggregation": [
+					[
+						"first(title)",
+						"first_title"
+					]
+				]
+			},
+			"output": "master_pivot_out_11",
+			"otherOptions": {
+				"printSchema": "N",
+				"show": "N",
+				"explain": "N",
+				"numOfPartitions": "N",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"14": {
+		"cumulative_imdb": {
+			"input": "master_partition_out_5",
+			"func": "CUMULATIVE",
+			"config": {
+				"keys": [
+					"genre"
+				],
+				"orderBy": [
+					"genre",
+					"star_rating"
+				],
+				"cumulativeFunction": "min",
+				"cumulativeColumn": "duration",
+				"targetColumn": "sumDuration"
+			},
+			"output": "master_pivot_out_11",
+			"otherOptions": {
+				"printSchema": "N",
+				"show": "50",
+				"explain": "N",
+				"numOfPartitions": "N",
+				"storage": "N",
+				"exit": "Y"
+			}
+		}
+	},
+	"15": {
+		"write_IMBD": {
+			"input": "master_sort_partition_5",
+			"func": "WRITE",
+			"output": {
+				"fileFormat": "csv",
+				"filePath": "${fileOutPath}",
+				"header": "true"
+			},
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"numOfPartitions": "N",
+				"storage": "N",
+				"exit": "Y"
+			}
+		}
+	}
+}

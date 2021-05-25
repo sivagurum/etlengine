@@ -1,0 +1,94 @@
+{
+	"0": {
+		"job_configurations": {
+			"func": "SETV",
+			"config": {
+				"otherOptionsEnable": "Y"
+			}
+		}
+	},
+	
+	"2": {
+		"csv read": {
+			"input": {
+				"filePath": "H:/test/Import_User_Sample_en.csv",
+				"fileFormat": "csv",
+				"header": "true",
+				"inferSchema": "true"
+			},
+			"func": "com.aero.components.ReadDF",
+			"output": "readIMDBout_1",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "10",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	}
+	,
+	
+	"3": {
+		"text file read": {
+			"input": {
+				"filePath": "H:/test/sample.txt",
+				"fileFormat": "text",
+				"header": "true",
+				"inferSchema": "true"
+			},
+			"func": "com.aero.components.ReadDF",
+			"output": "readIMDBout_12",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "10",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	}
+	,
+	
+	"4": {
+		"json read": {
+			"input": {
+				"filePath": "H:/test/imdb2.json",
+				"fileFormat": "json",
+				"header": "true",
+				"inferSchema": "true"
+			},
+			"func": "com.aero.components.ReadDF",
+			"output": "readIMDBout_123",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "10",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	
+	
+	"5": {
+		"jdbc read": {
+			"input": {
+				"fileFormat": "jdbc",
+				"table": "INFORMATION_SCHEMA.TABLES",
+				"user": "sa",
+				"password":"sa",
+				"url":"jdbc:h2:~/test"
+			},
+			"func": "com.aero.components.ReadDF",
+			"output": "readIMDBout_123",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "10",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	}
+}

@@ -1,0 +1,91 @@
+0:
+ job_configurations:
+  func: SETV
+  config:
+   otherOptionsEnable: Y
+1:
+ read_IMDB_masterFile:
+  input:
+   filePath: /Users/jagadeeshkumarsellappan/Documents/json2flatnull.json
+   fileFormat: json
+  func: READ
+  output: json_out_1
+  otherOptions:
+   printSchema: Y
+   explain: N
+   show: N
+   exit: N
+2:
+ read_IMDB_masterFile:
+  input: json_out_1
+  func: NORMALIZE
+  config:
+    normalizeKey: batters.batter
+    select:
+      - id
+      - name
+      - ppu
+      - batter.id as batterId
+      - batter.type as batterType
+      - topping
+    schema:
+        type: struct
+        fields:
+        - name: id
+          type: string
+          nullable: true
+          metadata: {}
+        - name: type
+          type: string
+          nullable: true
+          metadata: {}
+  output: normalize_out_1
+  otherOptions:
+   printSchema: Y
+   explain: N
+   show: Y
+   exit: N
+3:
+ read_IMDB_masterFile:
+  input: normalize_out_1
+  func: NORMALIZE
+  config:
+    normalizeKey: topping
+    select:
+      - id
+      - name
+      - ppu
+      - batterId
+      - batterType
+      - topping.id as toppingId
+      - topping.type as toppingId
+    schema:
+        type: struct
+        fields:
+        - name: id
+          type: string
+          nullable: true
+          metadata: {}
+        - name: type
+          type: string
+          nullable: true
+          metadata: {}
+  output: normalize_out_2
+  otherOptions:
+   printSchema: Y
+   explain: N
+   show: "100"
+   exit: Y
+100:
+ partition_IMBD_Sequence:
+   input: json_out_1
+   func: WRITE
+   output:
+     fileFormat: json
+     filePath: /Users/jagadeeshkumarsellappan/Downloads/imdb_write4.csv
+   otherOptions:
+     printSchema: N
+     explain: N
+     numOfPartitions: Y
+     storage: N
+     exit: N

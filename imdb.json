@@ -1,0 +1,158 @@
+{
+	"0": {
+		"job_configurations": {
+			"func": "SETV",
+			"config": {
+				"otherOptionsEnable": "Y"
+			}
+		}
+	},
+	"1": {
+		"read_IMDB_masterFile": {
+			"input": {
+				"filePath": "${filePath}${fileName}",
+				"fileFormat": "csv",
+				"header": "true",
+				"inferSchema": "true"
+			},
+			"func": "READ",
+			"output": "readIMDBout_1",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "N",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"2": {
+		"reformat_IMDB_file": {
+			"input": "readIMDBout_1",
+			"func": "REFORMAT",
+			"config": {
+				"reformatCol": [
+					[
+						"*",
+						"*"
+					],
+					[
+						"case when star_rating is null then 0 else cast(star_rating as Int) end",
+						"star_rating"
+					],
+					[
+						"cast('1' as String)",
+						"new_column"
+					]
+				]
+			},
+			"output": "reformatOutIMDB_2",
+			"otherOptions": {
+				"printSchema": "N",
+				"explain": "N",
+				"show": "N",
+				"storage": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"3": {
+		"sort_IMDB_file": {
+			"input": "reformatOutIMDB_2",
+			"func": "SORT",
+			"config": {
+				"storageLevel": "persist",
+				"sortKeys": [
+					[
+						"${key1}",
+						"${key1_ord}"
+					],
+					[
+						"${key2}",
+						"${key2_ord}"
+					]
+				]
+			},
+			"output": "reformatIMDBSortOut_3",
+			"otherOptions": {
+				"show": "N",
+				"exit": "N"
+			}
+		}
+	},
+	"4": {
+		"groupby_IMDB_file": {
+			"input": "reformatIMDBSortOut_3",
+			"func": "GROUPBYE",
+			"config": {
+				"groupbyKeys": null,
+				"aggregation": [
+					[
+						"min",
+						"duration",
+						"min_duration"
+					],
+					[
+						"max",
+						"duration",
+						"max_duration"
+					]
+				]
+			},
+			"output": "groupbyIMDBOut_4",
+			"otherOptions": {
+				"show": "Y",
+				"exit": "N"
+			}
+		}
+	},
+	"5": {
+		"groupby_IMDB_file": {
+			"input": "reformatIMDBSortOut_3",
+			"func": "GROUPBYE",
+			"config": {
+				"groupbyKeys": [
+					"genre",
+					"star_rating"
+				],
+				"aggregation": [
+					[
+						"count",
+						"title",
+						"count_title"
+					]
+				]
+			},
+			"output": "groupbyIMDBOut_5",
+			"otherOptions": {
+				"show": "30",
+				"exit": "N"
+			}
+		}
+		},
+	"6": {
+			"sort_IMDB_file": {
+				"input": "groupbyIMDBOut_5",
+				"func": "SORT",
+				"config": {
+					"storageLevel": "persist",
+					"sortKeys": [
+						[
+							"genre",
+							"desc"
+						],
+						[
+							"star_rating",
+							"desc"
+						]
+					]
+				},
+				"output": "reformatIMDBSortOut_1245",
+				"otherOptions": {
+					"show": "Y",
+					"exit": "N"
+				}
+			}
+		}
+
+}

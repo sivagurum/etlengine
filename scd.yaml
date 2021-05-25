@@ -1,0 +1,107 @@
+000:
+ job_configurations:
+  func: SETV
+  config:
+   otherOptionsEnable: Y
+001:
+ read_masterFile:
+  input:
+   filePath: /Users/jagadeeshkumarsellappan/Documents/SPARK_POC/scd1_emp_appn_master.json
+   fileFormat: json
+  func: READ
+  output: json_master_out_1
+  otherOptions:
+   printSchema: Y
+   explain: N
+   show: Y
+   exit: N
+
+002:
+ read_delta_masterFile:
+  input:
+   filePath: /Users/jagadeeshkumarsellappan/Documents/SPARK_POC/scd1_emp_appn_delta.json
+   fileFormat: json
+  func: READ
+  output: json_delta_out_2
+  otherOptions:
+   printSchema: Y
+   explain: N
+   show: Y
+   exit: N
+
+003:
+  SCD1:
+    input:
+      left: json_delta_out_2
+      right: json_master_out_1
+    func: SCD1
+    config:
+      joinKeys:
+      - appn_id
+      - seq_nm
+      scd1DateColumn: snap_dt
+      scd1DateValue: "08-23-2017"
+    output: SCD1_out
+    otherOptions:
+      printSchema: Y
+      explain: N
+      show: Y
+      exit: N
+004:
+ read_scd2_masterFile:
+  input:
+   filePath: /Users/jagadeeshkumarsellappan/Documents/SPARK_POC/scd2_emp_appn_master.json
+   fileFormat: json
+  func: READ
+  output: scd2_master_out_1
+  otherOptions:
+   printSchema: Y
+   explain: N
+   show: Y
+   exit: N
+
+005:
+ read_scd2_delta_File:
+  input:
+   filePath: /Users/jagadeeshkumarsellappan/Documents/SPARK_POC/scd2_emp_appn_delta.json
+   fileFormat: json
+  func: READ
+  output: scd2_delta_out_1
+  otherOptions:
+   printSchema: Y
+   explain: N
+   show: Y
+   exit: N
+006:
+  SCD2:
+    input:
+      left: scd2_delta_out_1
+      right: scd2_master_out_1
+    func: SCD2
+    config:
+      joinKeys:
+      - appn_id
+      - seq_nm
+      scd2StartDateColumn: snap_dt
+      scd2StartDate: "08-23-2017"
+      scd2EndDateColumn: snap_end_dt
+      scd2EndDate: "12-31-2100"
+    output: SCD2_out
+    otherOptions:
+      printSchema: Y
+      explain: N
+      show: Y
+      exit: Y
+100:
+ partition_IMBD_Sequence:
+   input: json_out_1
+   func: WRITE
+   output:
+     fileFormat: json
+     filePath: /Users/jagadeeshkumarsellappan/Downloads/imdb_write4.csv
+   otherOptions:
+     printSchema: N
+     explain: N
+     numOfPartitions: Y
+     storage: N
+     exit: N

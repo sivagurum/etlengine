@@ -1,0 +1,224 @@
+0:
+ job_configurations:
+  func: SETV
+  config:
+   otherOptionsEnable: Y
+1:
+ read_IMDB_masterFile:
+  input:
+   filePath: ${filePath}${fileName}
+   fileFormat: csv
+   header: "true"
+   inferSchema: "true"
+  func: READ
+  output: readIMDBout_1
+  otherOptions:
+   printSchema: N
+   explain: N
+   show: N
+   storage: N
+   exit: N
+2:
+ reformat_IMDB_file:
+  input: readIMDBout_1
+  func: REFORMAT
+  config:
+   reformatCol:
+    -
+        - "*"
+        - "*"
+    -
+        - "case when star_rating is null then 0 else cast(star_rating as Int) end"
+        - "star_rating"
+    -
+        - "cast('1' as String)"
+        - "new_column"
+  output: reformatOutIMDB_2
+  otherOptions:
+   printSchema: N
+   explain: N
+   show: N
+   storage: N
+   exit: N
+3:
+ sort_IMDB_file:
+  input: reformatOutIMDB_2
+  func: SORT
+  config:
+   storageLevel: persist
+   sortKeys:
+    -
+        - ${key1}
+        - ${key1_ord}
+    -
+        - ${key2}
+        - ${key2_ord}
+  output: reformatIMDBSortOut_3
+  otherOptions:
+   show: N
+   exit: N
+4:
+ groupby_IMDB_file:
+  input: reformatIMDBSortOut_3
+  func: GROUPBYE
+  config:
+   groupbyKeys:
+   aggregation:
+     -
+       - min
+       - duration
+       - "min_duration"
+     -
+       - max
+       - "duration"
+       - "max_duration"
+  output: groupbyIMDBOut_4
+  otherOptions:
+   show: N
+   exit: N
+5:
+ filter_IMDB_file:
+  input: reformatIMDBSortOut_3
+  func: FILTER
+  config:
+   filterCond: "head"
+   deSelect: Y
+  output:
+   select: headRec_4
+   deSelect: nonHeadRec_4
+  otherOptions:
+   headRec_4:
+    show: N
+    dtypes: N
+   nonHeadRec_4:
+    show: N
+    countOnColumn: N
+    explain: N
+    exit: N
+6:
+ storage_IMDB_file:
+  func: STORAGE
+  config:
+   headRec_4: "cache"
+   nonHeadRec_4: persist
+7:
+  IMBD_Sequence:
+    input: nonHeadRec_4
+    func: SEQUENCE
+    config:
+      startValue:
+        valueFrom:
+          nonHeadRec_4:
+            - min
+            - duration
+      stepValue: "1"
+      targetColumn: seqColTest
+    output: master_seq_out_5
+    otherOptions:
+      printSchema: N
+      explain: N
+      show: N
+      storage: N
+      exit: N
+8:
+  partition_IMBD_Sequence:
+    input: nonHeadRec_4
+    func: PARTITION
+    config:
+      partitionByColumns:
+        - genre
+      numberOfPartitions: 0
+    output: master_partition_out_5
+    otherOptions:
+      printSchema: N
+      explain: N
+      numOfPartitions: N
+      storage: N
+      exit: N
+9:
+  drop_IMBD_columns:
+    input: nonHeadRec_4
+    func: DROP
+    config:
+      drop:
+        - genre
+        - duration
+    output: master_drop_out_5
+    otherOptions:
+      printSchema: N
+      show: N
+      explain: N
+      numOfPartitions: N
+      storage: N
+      exit: N
+10:
+  sort_partition_imdb:
+    input: master_partition_out_5
+    func: SORT_PARTITION
+    config:
+      sortKeys:
+        - star_rating
+        - duration
+    output: master_sort_partition_5
+    otherOptions:
+      printSchema: N
+      show: N
+      explain: N
+      numOfPartitions: N
+      storage: N
+      exit: N
+11:
+  pivot_imdb:
+    input: master_partition_out_5
+    func: PIVOT
+    config:
+      groupbyKeys:
+        - star_rating
+      pivotColumn: genre
+      aggregation:
+        -
+          - first(title)
+          - first_title
+    output: master_pivot_out_11
+    otherOptions:
+      printSchema: N
+      show: N
+      explain: N
+      numOfPartitions: N
+      storage: N
+      exit: N
+12:
+  cumulative_imdb:
+    input: master_partition_out_5
+    func: CUMULATIVE
+    config:
+      keys:
+        - genre
+      orderBy:
+        - genre
+        - star_rating
+      cumulativeFunction: min
+      cumulativeColumn: duration
+      targetColumn: sumDuration
+    output: master_pivot_out_11
+    otherOptions:
+      printSchema: N
+      show: "1000"
+      explain: N
+      numOfPartitions: N
+      storage: N
+      exit: Y
+20:
+  write_IMBD:
+    input: master_sort_partition_5
+    func: WRITE
+    output:
+      fileFormat: csv
+      filePath: /Users/jagadeeshkumarsellappan/Downloads/imdb_write4.csv
+      header: "true"
+    otherOptions:
+      printSchema: N
+      explain: N
+      numOfPartitions: N
+      storage: N
+      exit: N

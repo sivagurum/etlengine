@@ -1,0 +1,10 @@
+{
+	"filePath": "./",
+	"fileName": "imdbratings.csv",
+	"key1": "genre",
+	"key1_ord": "asc",
+	"key2": "duration",
+	"key2_ord": "desc",
+	"is_sort_required": "N",
+	"fileOutPath":"./tmp/out1"
+}

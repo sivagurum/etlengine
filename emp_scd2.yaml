@@ -1,0 +1,70 @@
+000:
+ job_configurations:
+  func: SETV
+  config:
+   otherOptionsEnable: Y
+001:
+ read_employee_master_file:
+  input:
+   filePath: /Users/jagadeeshkumarsellappan/Documents/${PODATE}_scd2_emp_master.csv
+   fileFormat: csv
+   header: "true"
+   inferSchema: "true"
+  func: READ
+  output: emp_master_out
+  otherOptions:
+   printSchema: N
+   explain: N
+   show: Y
+   storage: N
+   exit: N
+
+002:
+ read_employee_stage_file:
+  input:
+   filePath: /Users/jagadeeshkumarsellappan/Documents/${ODATE}_scd2_emp_delta.csv
+   fileFormat: csv
+   header: "true"
+   inferSchema: "true"
+  func: READ
+  output: emp_delta_out
+  otherOptions:
+   printSchema: N
+   explain: N
+   show: Y
+   storage: N
+   exit: N
+
+003:
+  SCD2:
+    input:
+      left: emp_delta_out
+      right: emp_master_out
+    func: SCD2
+    config:
+      joinKeys:
+      - emp_id
+      startDateColumn: emp_start_date
+      startDate: ${START_DATE}
+      endDateColumn: emp_end_date
+      endDate: ${END_DATE}
+    output: SCD2_out_data
+    otherOptions:
+      printSchema: Y
+      explain: N
+      show: 20
+      exit: N
+100:
+ write_emp_scd2:
+   input: SCD2_out_data
+   func: WRITE
+   output:
+     fileFormat: csv
+     filePath: /Users/jagadeeshkumarsellappan/Documents/${ODATE}_scd2_emp_master.csv
+     header: "true"
+   otherOptions:
+     printSchema: N
+     explain: N
+     numOfPartitions: N
+     storage: N
+     exit: N
